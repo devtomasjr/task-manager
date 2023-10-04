@@ -33,6 +33,7 @@
         li.classList.add('d-flex');
         li.classList.add('align-items-center');
         li.classList.add('gap-3');
+        li.classList.add('my-1');
         return li;
     }
     async function updateTask(element) {
@@ -93,9 +94,13 @@
         if(element.innerText == 'Cronometrar'){
             element.innerText = '00:00:00';
         }
+        element.classList.remove('btn-outline-light');
+        element.classList.add('btn-light');
         clockActive = !clockActive;
         if(!clockActive){
             workerCount.terminate();
+            element.classList.remove('btn-light');
+            element.classList.add('btn-outline-light');
             return;
         }
         workerCount = new Worker('public/counter.js');
