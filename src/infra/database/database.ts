@@ -6,7 +6,6 @@ class Database {
 
     public static read() {
         try {
-            const fileContent = fs.readFileSync(this.filePath).toString();
             const data = JSON.parse(fs.readFileSync(this.filePath).toString());
             data.response = { status: 200, message: 'Success' };
             return data;
