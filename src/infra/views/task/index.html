@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Task List</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+
+<body class="bg-black text-white d-flex justify-content-center align-items-center text-left vh-100">
+    <div>
+        <ul id="task-list-todo" class="fs-6 list-group opacity-75 justify-content-center align-items-center"></ul>
+        <ul id="task-list-doing" class="fs-3 list-group my-4 justify-content-center align-items-center"></ul>
+        <ul id="task-list-done" class="fs-6 list-group opacity-50 justify-content-center align-items-center"></ul>
+    </div>
+</body>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.js"></script><script src="../../../public/enums?name=statusTask"></script>
+<script type="text/javascript">
+    function createInputElement(task, li){
+        li.innerHTML = `
+            <input class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTask(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''} /> 
+            <div class="" for="task-${task.id}">
+                <span class="deadline text-left">${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
+                <button class="btn btn-sm btn-outline-light" onClick="startClock(this)"
+                >Cronometrar</button> <br>
+                <span class="task-title">${task.title}</span><span class="rounded-circle btn btn-outline-light btn-edit"><i class="bi bi-pencil-fill"></i></span><br> 
+                <span class="text-little opacity-75">${task.description}</span>
+            </div>`;
+        li.classList.add('d-flex');
+        li.classList.add('align-items-center');
+        li.classList.add('gap-3');
+        return li;
+    }
+    async function updateTask(element) {
+        const id = element.id.split('-')[1];
+        const status = element.checked ? 3 : 1;
+        const response = await axios.put(`http://localhost:3010/api/tasks/`, {
+            id: id,
+            idStatus: status
+        });
+        const task = response.data;
+        const taskElement = document.getElementById(`task-${id}`).parentElement
+        taskElement.remove();
+        createInputElement(task, taskElement);
+        switch (task.idStatus) {
+            case StatusTask.TODO:
+                document.getElementById('task-list-todo').appendChild(taskElement);
+                break;
+            case StatusTask.DOING:
+                document.getElementById('task-list-doing').appendChild(taskElement);
+                break;
+            case StatusTask.DONE:
+                document.getElementById('task-list-done').appendChild(taskElement);
+                break;
+        }
+    }
+    async function getTasks() {
+        const taskListTodo = document.getElementById('task-list-todo');
+        const taskListDoing = document.getElementById('task-list-doing');
+        const taskListDone = document.getElementById('task-list-done');
+        const response = await axios.get('http://localhost:3010/api/tasks');
+        console.log(response.data);
+        const tasks = response.data;
+        tasks.forEach(task => {
+            const li = document.createElement('li');
+            createInputElement(task, li);
+            switch (task.idStatus) {
+                case StatusTask.TODO:
+                    taskListTodo.appendChild(li);
+                    break;
+                case StatusTask.DOING:
+                    taskListDoing.appendChild(li);
+                    break;
+                case StatusTask.DONE:
+                    taskListDone.appendChild(li);
+                    break;
+            }
+        });
+    }
+    getTasks();
+
+    let workerCount;
+    let clockActive = false;
+    let secondsCount = 0;
+    let minutesCount = 0;
+    let hoursCount = 0;
+    let elementDate;
+    async function startClock(element) {
+        if(element.innerText == 'Cronometrar'){
+            element.innerText = '00:00:00';
+        }
+        clockActive = !clockActive;
+        if(!clockActive){
+            workerCount.terminate();
+            return;
+        }
+        workerCount = new Worker('public/counter.js');
+        elementDate = moment(element.innerText, 'HH:mm:ss')
+        secondsCount = elementDate.seconds();
+        minutesCount = elementDate.minutes();
+        hoursCount = elementDate.hours();
+        element.secondsCount = secondsCount + (minutesCount * 60) + (hoursCount * 3600);
+        workerCount.postMessage(parseInt(element.secondsCount) == 0 ? 0 : parseInt(element.secondsCount)+1);
+        workerCount.onmessage = function (e) {
+            let secondsCount = e.data == 1 ? e.data + element.secondsCount : e.data;
+            element.innerText = moment().startOf('day').seconds(secondsCount).format('HH:mm:ss');
+        }
+    }
+</script>
+<style>
+    li::marker {
+        color: transparent;
+    }
+    .text-little {
+        font-size: 80%;
+    }
+    .deadline {
+        font-size: 50%;
+    }
+    .btn-edit {
+        transform: scale(0.5);
+    }
+</style>
+</html>

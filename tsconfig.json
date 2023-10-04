@@ -3,12 +3,12 @@
 		"module": "CommonJS",
 		"target": "ES2017",
 		"lib": ["ES2017", "DOM"],
-		"outDir": "src",
+		"outDir": "build",
 		"strict": true,
 		"sourceMap": true
 	},
 	"exclude": [
 		"node_modules",
-		"src"
+		"build"
 	]
 }

@@ -6,6 +6,7 @@ class Database {
 
     public static read() {
         try {
+            const fileContent = fs.readFileSync(this.filePath).toString();
             const data = JSON.parse(fs.readFileSync(this.filePath).toString());
             data.response = { status: 200, message: 'Success' };
             return data;
@@ -25,7 +26,7 @@ class Database {
 
     public static createFile(isTest: boolean = false) {
         try {
-            fs.writeFileSync(isTest ? this.testFilePath : this.filePath, '{}');
+            fs.writeFileSync(isTest ? this.testFilePath : this.filePath, '[]');
             return { response: { status: 200, message: 'Success' } };
         } catch (error) {
             return { response: { status: 500, message: 'Unable to create database file' } };
