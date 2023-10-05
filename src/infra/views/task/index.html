@@ -10,9 +10,9 @@
 
 <body class="bg-black text-white d-flex justify-content-center align-items-center text-left vh-100">
     <div>
-        <ul id="task-list-todo" class="fs-6 list-group opacity-75 justify-content-center align-items-center"></ul>
-        <ul id="task-list-doing" class="fs-3 list-group my-4 justify-content-center align-items-center"></ul>
-        <ul id="task-list-done" class="fs-6 list-group opacity-50 justify-content-center align-items-center"></ul>
+        <ul id="task-list-todo" class="fs-6 list-group opacity-75 justify-content-end align-items-center" style="height: 40vh;"></ul>
+        <ul id="task-list-doing" class="fs-3 list-group my-4 justify-content-center align-items-center" style="height: 20vh;"></ul>
+        <ul id="task-list-done" class="fs-6 list-group opacity-50 justify-content-top align-items-center" style="height: 40vh;"></ul>
     </div>
 </body>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
@@ -20,14 +20,34 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.js"></script><script src="../../../public/enums?name=statusTask"></script>
 <script type="text/javascript">
+    function elementToInput(id, btn) {
+        const element = document.getElementById(id);
+        const input = document.createElement('input');
+        input.type = 'textarea';
+        input.classList.add('mt-1', 'bg-black', 'border-white', 'border-1', 'rounded', 'text-white');
+        input.style.minWidth = '80%';
+        input.value = element.innerText;
+        element.parentElement.replaceChild(input, element);
+        input.focus();
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        btn.onclick = () => { inputToElement(input, id, btn); }
+    }
+    function inputToElement (input, id, btn) {
+        const element = document.createElement('span');
+        element.id = id;
+        element.innerText = input.value;
+        input.parentElement.replaceChild(element, input);
+        btn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+        btn.onclick = () => { elementToInput(id, btn); }
+    }
     function createInputElement(task, li){
         li.innerHTML = `
             <input class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTask(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''} /> 
             <div class="" for="task-${task.id}">
                 <span class="deadline text-left">${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
-                <button class="btn btn-sm btn-outline-light" onClick="startClock(this)"
-                >Cronometrar</button> <br>
-                <span class="task-title">${task.title}</span><span class="rounded-circle btn btn-outline-light btn-edit"><i class="bi bi-pencil-fill"></i></span><br> 
+                ${task.idStatus == StatusTask.DOING ? '<button class="btn btn-sm btn-outline-light" onClick="startClock(this)">Cronometrar</button>' : ''} <br>
+                <span id="task-title-${task.id}">${task.title}</span><span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-title-${task.id}', this)"
+                ><i class="bi bi-pencil-fill"></i></span><br> 
                 <span class="text-little opacity-75">${task.description}</span>
             </div>`;
         li.classList.add('d-flex');
@@ -66,6 +86,7 @@
         const response = await axios.get('http://localhost:3010/api/tasks');
         console.log(response.data);
         const tasks = response.data;
+        tasks.sort((a, b) => b.id - a.id);
         tasks.forEach(task => {
             const li = document.createElement('li');
             createInputElement(task, li);
