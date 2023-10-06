@@ -20,13 +20,17 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.js"></script><script src="../../../public/enums?name=statusTask"></script>
 <script type="text/javascript">
+    var tasks = [];
     function elementToInput(id, btn) {
         const element = document.getElementById(id);
         const input = document.createElement('input');
-        input.type = 'textarea';
+        input.type = 'text';
         input.classList.add('mt-1', 'bg-black', 'border-white', 'border-1', 'rounded', 'text-white');
-        input.style.minWidth = '80%';
+        input.style.width = '80vw';
         input.value = element.innerText;
+        input.dataset.value = element.dataset.value;
+        input.dataset.key = element.dataset.key;
+        input.elementClass = element.classList.value;
         element.parentElement.replaceChild(input, element);
         input.focus();
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
@@ -36,37 +40,44 @@
         const element = document.createElement('span');
         element.id = id;
         element.innerText = input.value;
+        element.dataset.value = input.value;
+        element.dataset.key = input.dataset.key;
+        element.classList.value = input.elementClass;
         input.parentElement.replaceChild(element, input);
         btn.innerHTML = '<i class="bi bi-pencil-fill"></i>';
         btn.onclick = () => { elementToInput(id, btn); }
+        let task = tasks.find(task => task.id == id.split('-')[2]);
+        task[element.dataset.key] = element.dataset.value;
+        updateTask(task);
     }
-    function createInputElement(task, li){
+    function taskItemComponent(task, li){
         li.innerHTML = `
-            <input class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTask(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''} /> 
-            <div class="" for="task-${task.id}">
-                <span class="deadline text-left">${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
-                ${task.idStatus == StatusTask.DOING ? '<button class="btn btn-sm btn-outline-light" onClick="startClock(this)">Cronometrar</button>' : ''} <br>
-                <span id="task-title-${task.id}">${task.title}</span><span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-title-${task.id}', this)"
-                ><i class="bi bi-pencil-fill"></i></span><br> 
-                <span class="text-little opacity-75">${task.description}</span>
+            <input data-key="idStatus" data-value="${task.idStatus}" class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTaskStatus(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''}/> 
+            <div style="width:fit-content" for="task-${task.id}">
+                <span title="Deadline" data-key="deadline" data-value="${task.deadline}" class="deadline text-left" >${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
+                ${task.idStatus == StatusTask.DOING ? '<button class="btn btn-sm btn-outline-light" onClick="startClock(this)"><i class="bi bi-alarm-fill"></i></button>' : ''} <br>
+                <span data-key="title" data-value="${task.title}" id="task-title-${task.id}">${task.title}</span>
+                <span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-title-${task.id}', this)">
+                    <i class="bi bi-pencil-fill"></i>
+                </span><br> 
+                <span data-key="description" data-value="${task.description}" class="text-little opacity-75" id="task-description-${task.id}">${task.description || 'Description'}</span>
+                <span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-description-${task.id}', this)">
+                    <i class="bi bi-pencil-fill"></i>
+                </span>
             </div>`;
-        li.classList.add('d-flex');
-        li.classList.add('align-items-center');
-        li.classList.add('gap-3');
-        li.classList.add('my-1');
+        li.classList.add('d-flex', 'align-items-center', 'gap-3', 'my-1');
         return li;
     }
-    async function updateTask(element) {
+    function updateTaskStatus(element) {
         const id = element.id.split('-')[1];
         const status = element.checked ? 3 : 1;
-        const response = await axios.put(`http://localhost:3010/api/tasks/`, {
-            id: id,
-            idStatus: status
-        });
-        const task = response.data;
-        const taskElement = document.getElementById(`task-${id}`).parentElement
+        element.dataset.value = status;
+        let task = tasks.find(task => task.id == id);
+        task[element.dataset.key] = parseInt(element.dataset.value);
+        updateTask(task);
+        const taskElement = document.getElementById(`task-${task.id}`).parentElement
         taskElement.remove();
-        createInputElement(task, taskElement);
+        taskItemComponent(task, taskElement);
         switch (task.idStatus) {
             case StatusTask.TODO:
                 document.getElementById('task-list-todo').appendChild(taskElement);
@@ -79,17 +90,22 @@
                 break;
         }
     }
+    async function updateTask(task) {
+        const response = await axios.put(`http://localhost:3010/api/tasks/`, {
+            ...task
+        });
+        task = response.data;
+    }
     async function getTasks() {
         const taskListTodo = document.getElementById('task-list-todo');
         const taskListDoing = document.getElementById('task-list-doing');
         const taskListDone = document.getElementById('task-list-done');
         const response = await axios.get('http://localhost:3010/api/tasks');
-        console.log(response.data);
-        const tasks = response.data;
+        tasks = response.data;
         tasks.sort((a, b) => b.id - a.id);
         tasks.forEach(task => {
             const li = document.createElement('li');
-            createInputElement(task, li);
+            taskItemComponent(task, li);
             switch (task.idStatus) {
                 case StatusTask.TODO:
                     taskListTodo.appendChild(li);
@@ -112,7 +128,7 @@
     let hoursCount = 0;
     let elementDate;
     async function startClock(element) {
-        if(element.innerText == 'Cronometrar'){
+        if(isNaN(parseInt(element.innerText))){
             element.innerText = '00:00:00';
         }
         element.classList.remove('btn-outline-light');
@@ -149,6 +165,12 @@
     }
     .btn-edit {
         transform: scale(0.5);
+        opacity: 0;
+        margin-bottom: -5px;
+        margin-top: -8px;
+    }
+    span:hover + .btn-edit, input:hover + .btn-edit, .btn-edit:hover {
+        opacity: 1;
     }
 </style>
 </html>
