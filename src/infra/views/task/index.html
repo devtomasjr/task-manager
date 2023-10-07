@@ -12,9 +12,9 @@
     <div>
         <ul id="task-list-doing" class="fs-3 list-group align-items-center"></ul>
         <hr>
-        <ul id="task-list-todo" class="fs-6 list-group opacity-75 align-items-center"></ul>
+        <ul id="task-list-todo" class="fs-5 list-group opacity-75 align-items-center"></ul>
         <hr>
-        <ul id="task-list-done" class="fs-6 list-group opacity-75 align-items-center"></ul>
+        <ul id="task-list-done" class="fs-5 list-group opacity-75 align-items-center"></ul>
     </div>
     <!-- Form edit deadline, estimated and time spent -->
 </body>
@@ -154,14 +154,14 @@
     function taskItemComponent(task, li){
         li.innerHTML = `
             <div class="d-flex align-items-center justify-content-center">
-            <input data-key="idStatus" data-value="${task.idStatus}" class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTaskStatus(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''}/> 
                 <span class="rounded-circle btn ${task.idStatus == StatusTask.DOING ? 'btn-light' : 'btn-outline-light'} btn-edit mt-1 mb-0 opacity-100" onClick="updateTaskStatus(document.getElementById('task-${task.id}'),${task.idStatus == StatusTask.DOING ? StatusTask.TODO : StatusTask.DOING})">
                     <i class="bi bi-pin-fill"></i>
                 </span>
+                <input data-key="idStatus" data-value="${task.idStatus}" class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTaskStatus(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''}/> 
             </div>
             <div style="width:fit-content" for="task-${task.id}">
                 <div class="task-item-header">
-                    <span title="Deadline" data-key="deadline" data-value="${task.deadline}" class="deadline text-left" >${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
+                    <span title="Deadline" data-key="deadline" data-value="${task.deadline}" class="deadline text-left" >${task.deadline ? moment(new Date(task?.deadline)).format("DD/MM | HH:mm") + '' : ''}</span>
                     <small title="Estimated" class="fw-light deadline">| Estimated: </small>
                         <span title="Estimated" data-key="estimated" data-value="${task.timeEstimated}" class="deadline text-left" >${task.timeEstimated ? moment().startOf('day').seconds(task.timeEstimated).format('HH:mm') : '00:00'}</span>
                     <small title="Time spent" class="fw-light deadline">| Time Spent: </small>
