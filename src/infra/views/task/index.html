@@ -8,12 +8,15 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 
-<body class="bg-black text-white d-flex justify-content-center align-items-center text-left vh-100">
+<body class="bg-black text-white">
     <div>
-        <ul id="task-list-todo" class="fs-6 list-group opacity-75 justify-content-end align-items-center" style="height: 40vh;"></ul>
-        <ul id="task-list-doing" class="fs-3 list-group my-4 justify-content-center align-items-center" style="height: 20vh;"></ul>
-        <ul id="task-list-done" class="fs-6 list-group opacity-50 justify-content-top align-items-center" style="height: 40vh;"></ul>
+        <ul id="task-list-doing" class="fs-3 list-group align-items-center"></ul>
+        <hr>
+        <ul id="task-list-todo" class="fs-6 list-group opacity-75 align-items-center"></ul>
+        <hr>
+        <ul id="task-list-done" class="fs-6 list-group opacity-75 align-items-center"></ul>
     </div>
+    <!-- Form edit deadline, estimated and time spent -->
 </body>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
@@ -21,6 +24,103 @@
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.js"></script><script src="../../../public/enums?name=statusTask"></script>
 <script type="text/javascript">
     var tasks = [];
+    function saveTimesAndDates(id){
+        const task = tasks.find(task => task.id == id);
+        const deadline = document.getElementById('input-deadline').value;
+        const estimated = document.getElementById('input-estimated').value;
+        const timeSpent = document.getElementById('input-timeSpent').value;
+        task.deadline = moment(deadline).format('YYYY-MM-DD HH:mm:ss');
+        task.timeEstimated = estimated.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b);
+        task.timeSpent = timeSpent.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b);
+        updateTask(task);
+        const taskElement = document.getElementById(`task-${task.id}`).parentElement
+        taskElement.remove();
+        taskItemComponent(task, taskElement);
+        switch (task.idStatus) {
+            case StatusTask.TODO:
+                document.getElementById('task-list-todo').appendChild(taskElement);
+                break;
+            case StatusTask.DOING:
+                document.getElementById('task-list-doing').appendChild(taskElement);
+                break;
+            case StatusTask.DONE:
+                document.getElementById('task-list-done').appendChild(taskElement);
+                break;
+        }
+        const modal = bootstrap.Modal.getInstance(document.getElementById('formComponent'));
+        modal.hide();
+    }
+    function form(title, inputs, action){
+        return `
+            <div class="modal fade" id="formComponent" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="formComponentLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
+                <div class="modal-content bg-dark text-white">
+                    <form>
+                        <div class="modal-header">
+                            <h1 class="modal-title fs-5" id="formComponentLabel">${title}</h1>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${inputs.map(input => {
+                                return `<div class="mb-3">
+                                            <label for="input-${input.id}" class="form-label">${input.label}</label>
+                                            <${input.tagHTML} type="${input.type}" data-bs-theme="dark" class="form-control bg-dark text-white border-white 
+                                            " id="input-${input.id}" value="${input.value}" placeholder="${input.placeholder}" ${input.required ? 'required' : ''} ${input.tagHTML == 'select' ? input.options.map(option => `<option value="${option.value}">${option.label}</option>`) : ''}>
+                                        </div>`
+                            }).join('')}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
+                            <button onClick="${action.function}" type="button" class="btn btn-light">${action.label}</button>
+                        </div>
+                    </form>
+                </div>
+                </div>
+            </div>    
+        `
+    }
+    function handleTimesAndDates(id){
+        clockActive ? saveTime(id) : '';
+        const task = tasks.find(task => task.id == id);
+        const inputs = [
+            {
+                id: 'deadline',
+                label: 'Deadline',
+                type: 'datetime-local',
+                placeholder: 'Deadline',
+                required: true,
+                tagHTML: 'input',
+                value: moment(task.deadline).format('YYYY-MM-DDTHH:mm')
+            },
+            {
+                id: 'estimated',
+                label: 'Estimated',
+                type: 'time',
+                placeholder: 'Estimated',
+                required: true,
+                tagHTML: 'input',
+                value: task.timeEstimated ? moment().startOf('day').seconds(task.timeEstimated).format('HH:mm:ss') : ''
+            },
+            {
+                id: 'timeSpent',
+                label: 'Time Spent',
+                type: 'time',
+                placeholder: 'Time Spent',
+                required: true,
+                tagHTML: 'input',
+                value: task.timeSpent ? moment().startOf('day').seconds(task.timeSpent).format('HH:mm:ss') : ''
+            },
+        ];
+        const action = {
+            label: 'Save',
+            function: `saveTimesAndDates(${id})`
+        }
+        document.body.innerHTML += form('Edit Times and Dates', inputs, action);
+        const modal = new bootstrap.Modal(document.getElementById('formComponent'), {
+            keyboard: false
+        });
+        modal.show();
+    }
     function elementToInput(id, btn) {
         const element = document.getElementById(id);
         const input = document.createElement('input');
@@ -31,6 +131,7 @@
         input.dataset.value = element.dataset.value;
         input.dataset.key = element.dataset.key;
         input.elementClass = element.classList.value;
+        element.classList.value ? input.classList.add(...element.classList.value.split(' ')) : '';
         element.parentElement.replaceChild(input, element);
         input.focus();
         btn.innerHTML = '<i class="bi bi-check-lg"></i>';
@@ -52,30 +153,45 @@
     }
     function taskItemComponent(task, li){
         li.innerHTML = `
+            <div class="d-flex align-items-center justify-content-center">
             <input data-key="idStatus" data-value="${task.idStatus}" class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTaskStatus(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''}/> 
-            <div style="width:fit-content" for="task-${task.id}">
-                <span title="Deadline" data-key="deadline" data-value="${task.deadline}" class="deadline text-left" >${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
-                ${task.idStatus == StatusTask.DOING ? '<button class="btn btn-sm btn-outline-light" onClick="startClock(this)"><i class="bi bi-alarm-fill"></i></button>' : ''} <br>
-                <span data-key="title" data-value="${task.title}" id="task-title-${task.id}">${task.title}</span>
-                <span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-title-${task.id}', this)">
-                    <i class="bi bi-pencil-fill"></i>
-                </span><br> 
-                <span data-key="description" data-value="${task.description}" class="text-little opacity-75" id="task-description-${task.id}">${task.description || 'Description'}</span>
-                <span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-description-${task.id}', this)">
-                    <i class="bi bi-pencil-fill"></i>
+                <span class="rounded-circle btn ${task.idStatus == StatusTask.DOING ? 'btn-light' : 'btn-outline-light'} btn-edit mt-1 mb-0 opacity-100" onClick="updateTaskStatus(document.getElementById('task-${task.id}'),${task.idStatus == StatusTask.DOING ? StatusTask.TODO : StatusTask.DOING})">
+                    <i class="bi bi-pin-fill"></i>
                 </span>
+            </div>
+            <div style="width:fit-content" for="task-${task.id}">
+                <div class="task-item-header">
+                    <span title="Deadline" data-key="deadline" data-value="${task.deadline}" class="deadline text-left" >${task.deadline ? moment(task?.deadline).format("DD/MM | HH:mm") + '' : ''}</span>
+                    <small title="Estimated" class="fw-light deadline">| Estimated: </small>
+                        <span title="Estimated" data-key="estimated" data-value="${task.timeEstimated}" class="deadline text-left" >${task.timeEstimated ? moment().startOf('day').seconds(task.timeEstimated).format('HH:mm') : '00:00'}</span>
+                    <small title="Time spent" class="fw-light deadline">| Time Spent: </small>
+                        ${task.idStatus == StatusTask.DOING ? `<button class="btn btn-sm btn-outline-light deadline" id="time-spent-${task.id}" onClick="startClock(this)">${task.timeSpent ? moment().startOf('day').seconds(task.timeSpent).format('HH:mm:ss') : '<i class="bi bi-alarm-fill"></i>'}</button>` : ''}
+                    <span class="rounded-circle btn btn-outline-light btn-edit opacity-100" onClick="handleTimesAndDates(${task.id})">
+                        <i class="bi bi-pencil-fill"></i>
+                    </span> 
+                </div>
+                <div>
+                    <span title="title" data-key="title" data-value="${task.title}" id="task-title-${task.id}">${task.title}</span>
+                        <span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-title-${task.id}', this)">
+                            <i class="bi bi-pencil-fill"></i>
+                        </span>
+                </div>
+                <span title="Description" data-key="description" data-value="${task.description}" class="text-little opacity-75" id="task-description-${task.id}">${task.description || 'Description'}</span>
+                    <span class="rounded-circle btn btn-outline-light btn-edit" onClick="elementToInput('task-description-${task.id}', this)">
+                        <i class="bi bi-pencil-fill"></i>
+                    </span>
             </div>`;
-        li.classList.add('d-flex', 'align-items-center', 'gap-3', 'my-1');
+        li.classList.add('d-flex', 'align-items-center', 'gap-2', 'my-1');
         return li;
     }
-    function updateTaskStatus(element) {
+    function updateTaskStatus(element, status = 0) {
         const id = element.id.split('-')[1];
-        const status = element.checked ? 3 : 1;
+        status = status ? status : element.checked ? StatusTask.DONE : StatusTask.TODO;
         element.dataset.value = status;
         let task = tasks.find(task => task.id == id);
         task[element.dataset.key] = parseInt(element.dataset.value);
         updateTask(task);
-        const taskElement = document.getElementById(`task-${task.id}`).parentElement
+        const taskElement = document.getElementById(`task-${task.id}`).parentElement.parentElement
         taskElement.remove();
         taskItemComponent(task, taskElement);
         switch (task.idStatus) {
@@ -102,7 +218,6 @@
         const taskListDone = document.getElementById('task-list-done');
         const response = await axios.get('http://localhost:3010/api/tasks');
         tasks = response.data;
-        tasks.sort((a, b) => b.id - a.id);
         tasks.forEach(task => {
             const li = document.createElement('li');
             taskItemComponent(task, li);
@@ -121,6 +236,14 @@
     }
     getTasks();
 
+    function saveTime(id){
+        const element = document.getElementById(`time-spent-${id}`);
+        const task = tasks.find(task => task.id == id);
+        task.timeSpent = element.innerText.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b);
+        updateTask(task);
+        startClock(element);
+    }
+
     let workerCount;
     let clockActive = false;
     let secondsCount = 0;
@@ -138,8 +261,14 @@
             workerCount.terminate();
             element.classList.remove('btn-light');
             element.classList.add('btn-outline-light');
+            element.nextSibling.remove();
             return;
         }
+        let btnSave = document.createElement('span');
+        btnSave.classList.add('btn', 'btn-sm', 'btn-outline-light', 'rounded-circle', 'btn-edit');
+        btnSave.innerHTML = '<i class="bi bi-check-lg"></i>';
+        btnSave.onclick = () => { saveTime(element.id.split('-')[2]); }
+        element.parentNode.insertBefore(btnSave, element.nextSibling);
         workerCount = new Worker('public/counter.js');
         elementDate = moment(element.innerText, 'HH:mm:ss')
         secondsCount = elementDate.seconds();
@@ -169,8 +298,9 @@
         margin-bottom: -5px;
         margin-top: -8px;
     }
-    span:hover + .btn-edit, input:hover + .btn-edit, .btn-edit:hover {
+    span:hover + .btn-edit, .task-item-header:hover .btn-edit, input:hover + .btn-edit, button:hover + .btn-edit, .btn-edit:hover {
         opacity: 1;
     }
+        
 </style>
 </html>
