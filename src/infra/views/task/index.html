@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 </head>
 
-<body class="bg-black text-white">
+<body>
     <div>
         <ul id="task-list-doing" class="fs-3 list-group align-items-center"></ul>
         <hr>
@@ -16,12 +16,20 @@
         <hr>
         <ul id="task-list-done" class="fs-5 list-group opacity-75 align-items-center"></ul>
     </div>
-    <!-- Form edit deadline, estimated and time spent -->
+
+    <!-- fixed button on bottom and horizontal centered add task -->
+    <div class="d-flex justify-content-center fixed-bottom mb-3">
+        <button type="button" class="btn btn-light" onclick="showAddTaskModal()">
+             Add Task <i class="bi bi-plus-lg"></i>
+        </button>
+    </div>
+
 </body>
 <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.js"></script><script src="../../../public/enums?name=statusTask"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/pt-br.js"></script>
+<script src="../../../public/enums?name=statusTask"></script>
 <script type="text/javascript">
     var tasks = [];
     function saveTimesAndDates(id){
@@ -51,30 +59,31 @@
         modal.hide();
     }
     function form(title, inputs, action){
-        return `
+        document.getElementById('formComponent')?.remove();
+        document.body.innerHTML +=  `
             <div class="modal fade" id="formComponent" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="formComponentLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-scrollable modal-dialog-centered">
-                <div class="modal-content bg-dark text-white">
-                    <form>
+                    <div class="modal-content">
                         <div class="modal-header">
                             <h1 class="modal-title fs-5" id="formComponentLabel">${title}</h1>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
+                            <form>
                             ${inputs.map(input => {
                                 return `<div class="mb-3">
                                             <label for="input-${input.id}" class="form-label">${input.label}</label>
-                                            <${input.tagHTML} type="${input.type}" data-bs-theme="dark" class="form-control bg-dark text-white border-white 
+                                            <${input.tagHTML} type="${input.type}" data-bs-theme="dark" class="form-control
                                             " id="input-${input.id}" value="${input.value}" placeholder="${input.placeholder}" ${input.required ? 'required' : ''} ${input.tagHTML == 'select' ? input.options.map(option => `<option value="${option.value}">${option.label}</option>`) : ''}>
                                         </div>`
                             }).join('')}
                         </div>
-                        <div class="modal-footer">
+                        <div class="modal-footer justify-content-center gap-2">
                             <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Close</button>
                             <button onClick="${action.function}" type="button" class="btn btn-light">${action.label}</button>
                         </div>
-                    </form>
-                </div>
+                        </form>
+                    </div>
                 </div>
             </div>    
         `
@@ -115,7 +124,8 @@
             label: 'Save',
             function: `saveTimesAndDates(${id})`
         }
-        document.body.innerHTML += form('Edit Times and Dates', inputs, action);
+        
+        form('Edit Times and Dates', inputs, action);
         const modal = new bootstrap.Modal(document.getElementById('formComponent'), {
             keyboard: false
         });
@@ -125,7 +135,7 @@
         const element = document.getElementById(id);
         const input = document.createElement('input');
         input.type = 'text';
-        input.classList.add('mt-1', 'bg-black', 'border-white', 'border-1', 'rounded', 'text-white');
+        input.classList.add('mt-1', 'border-1', 'rounded');
         input.style.width = '80vw';
         input.value = element.innerText;
         input.dataset.value = element.dataset.value;
@@ -157,7 +167,7 @@
                 <span class="rounded-circle btn ${task.idStatus == StatusTask.DOING ? 'btn-light' : 'btn-outline-light'} btn-edit mt-1 mb-0 opacity-100" onClick="updateTaskStatus(document.getElementById('task-${task.id}'),${task.idStatus == StatusTask.DOING ? StatusTask.TODO : StatusTask.DOING})">
                     <i class="bi bi-pin-fill"></i>
                 </span>
-                <input data-key="idStatus" data-value="${task.idStatus}" class="form-check-input bg-black border-white" type="checkbox" id="task-${task.id}" onChange="updateTaskStatus(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''}/> 
+                <input data-key="idStatus" data-value="${task.idStatus}" class="form-check-input bg-dark border-white" type="checkbox" id="task-${task.id}" onChange="updateTaskStatus(this)" ${task.idStatus == StatusTask.DONE ? 'checked' : ''}/> 
             </div>
             <div style="width:fit-content" for="task-${task.id}">
                 <div class="task-item-header">
@@ -207,7 +217,7 @@
         }
     }
     async function updateTask(task) {
-        const response = await axios.put(`http://localhost:3010/api/tasks/`, {
+        const response = await axios.put(`http://localhost:8080/api/tasks/`, {
             ...task
         });
         task = response.data;
@@ -216,7 +226,7 @@
         const taskListTodo = document.getElementById('task-list-todo');
         const taskListDoing = document.getElementById('task-list-doing');
         const taskListDone = document.getElementById('task-list-done');
-        const response = await axios.get('http://localhost:3010/api/tasks');
+        const response = await axios.get('http://localhost:8080/api/tasks');
         tasks = response.data;
         tasks.forEach(task => {
             const li = document.createElement('li');
@@ -235,6 +245,91 @@
         });
     }
     getTasks();
+
+    function showAddTaskModal(){
+        const inputs = [
+            {
+                id: 'title',
+                label: 'Title',
+                type: 'text',
+                placeholder: 'Title',
+                required: true,
+                tagHTML: 'input',
+                value: ''
+            },
+            {
+                id: 'description',
+                label: 'Description',
+                type: 'text',
+                placeholder: 'Description',
+                required: false,
+                tagHTML: 'input',
+                value: ''
+            },
+            {
+                id: 'deadline',
+                label: 'Deadline',
+                type: 'datetime-local',
+                placeholder: 'Deadline',
+                required: true,
+                tagHTML: 'input',
+                value: ''
+            },
+            {
+                id: 'estimated',
+                label: 'Estimated',
+                type: 'time',
+                placeholder: 'Estimated',
+                required: true,
+                tagHTML: 'input',
+                value: ''
+            },
+            {
+                id: 'timeSpent',
+                label: 'Time Spent',
+                type: 'time',
+                placeholder: 'Time Spent',
+                required: true,
+                tagHTML: 'input',
+                value: ''
+            },
+        ];
+        const action = {
+            label: 'Add',
+            function: `addTask()`
+        }
+        
+        form('Add Task', inputs, action);
+
+        const modal = new bootstrap.Modal(document.getElementById('formComponent'), {
+            keyboard: false
+        });
+        modal.show();
+    }
+
+    async function addTask(){
+        const title = document.getElementById('input-title').value;
+        const description = document.getElementById('input-description').value;
+        const deadline = document.getElementById('input-deadline').value;
+        const estimated = document.getElementById('input-estimated').value;
+        const timeSpent = document.getElementById('input-timeSpent').value;
+        const response = await axios.post(`http://localhost:8080/api/tasks/`, {
+            title,
+            description,
+            deadline: moment(deadline).format('YYYY-MM-DD HH:mm:ss'),
+            timeEstimated: estimated.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b),
+            timeSpent: timeSpent.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b),
+            idStatus: StatusTask.TODO,
+            createdDate: moment().format('YYYY-MM-DD HH:mm:ss')
+        });
+        const task = response.data;
+        const taskListTodo = document.getElementById('task-list-todo');
+        const li = document.createElement('li');
+        taskItemComponent(task, li);
+        taskListTodo.appendChild(li);
+        const modal = bootstrap.Modal.getInstance(document.getElementById('formComponent'));
+        modal.hide();
+    }
 
     function saveTime(id){
         const element = document.getElementById(`time-spent-${id}`);
