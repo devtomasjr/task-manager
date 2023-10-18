@@ -11,7 +11,7 @@ I've been using [Google Calendar](https://calendar.google.com) for a long time t
 - [Express](https://expressjs.com/)
 - [Node Test Runner](https://nodejs.org/api/test.html)
 - [Bootstrap](https://getbootstrap.com/)
-- [Docker](https://www.docker.com/) (TODO)
+- [Docker](https://www.docker.com/)
 - [PostgreSQL](https://www.postgresql.org/) (TODO)
 - [MongoDB](https://www.mongodb.com/) (TODO)
 - [JWT](https://jwt.io/) (TODO)
@@ -34,7 +34,7 @@ Hexagonal architecture. The domain will be independent of the infrastructure. Th
 - [ ] Task tags
 - [ ] Task recurrence
 - [ ] Task reminders
-- [ ] Docker
+- [x] Docker
 - [ ] Production database
 - [ ] Deploy to production on Vercel
 - [ ] JWT Authentication
@@ -45,6 +45,8 @@ Hexagonal architecture. The domain will be independent of the infrastructure. Th
     - [ ] Authentication server
     - [ ] Database
 - [ ] Tests
+    - [x] Unit tests for the domain
+    - [ ] Unit tests for the web server
 
 ## Configuration
 
