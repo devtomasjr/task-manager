@@ -1,7 +1,5 @@
 import express =  require("express")
 import cors = require('cors');
-import Database from "../database/database";
-
 
 const app = express()
 
@@ -38,6 +36,7 @@ app.get("/public/enums", (req: express.Request, res: express.Response) => {
 });
 
 
-app.listen(3010, () => {
-  console.log('Server listening on port 3010')
+const port = process.env.PORT || 8080
+app.listen(port, () => {
+  console.log('Server listening on port '+port)
 })
