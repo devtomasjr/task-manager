@@ -19,7 +19,7 @@ class Task {
         return tasks;
     }
 
-    public static add(task: any): Task {
+    public static add(task: Task): Task {
         const tasks = this.list();
         const lastId = tasks.length > 0 ? tasks[tasks.length - 1].id : 0;
         task.id = lastId + 1;
