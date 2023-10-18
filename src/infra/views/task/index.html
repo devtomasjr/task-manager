@@ -41,20 +41,7 @@
         task.timeEstimated = estimated.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b);
         task.timeSpent = timeSpent.split(':').map((value, index) => value * Math.pow(60, 2 - index)).reduce((a, b) => a + b);
         updateTask(task);
-        const taskElement = document.getElementById(`task-${task.id}`).parentElement
-        taskElement.remove();
-        taskItemComponent(task, taskElement);
-        switch (task.idStatus) {
-            case StatusTask.TODO:
-                document.getElementById('task-list-todo').appendChild(taskElement);
-                break;
-            case StatusTask.DOING:
-                document.getElementById('task-list-doing').appendChild(taskElement);
-                break;
-            case StatusTask.DONE:
-                document.getElementById('task-list-done').appendChild(taskElement);
-                break;
-        }
+        updateTaskList(task);
         const modal = bootstrap.Modal.getInstance(document.getElementById('formComponent'));
         modal.hide();
     }
@@ -201,6 +188,15 @@
         let task = tasks.find(task => task.id == id);
         task[element.dataset.key] = parseInt(element.dataset.value);
         updateTask(task);
+        updateTaskList(task);
+    }
+    async function updateTask(task) {
+        const response = await axios.put(`http://localhost:8080/api/tasks/`, {
+            ...task
+        });
+        task = response.data;
+    }
+    function updateTaskList(task){
         const taskElement = document.getElementById(`task-${task.id}`).parentElement.parentElement
         taskElement.remove();
         taskItemComponent(task, taskElement);
@@ -215,12 +211,6 @@
                 document.getElementById('task-list-done').appendChild(taskElement);
                 break;
         }
-    }
-    async function updateTask(task) {
-        const response = await axios.put(`http://localhost:8080/api/tasks/`, {
-            ...task
-        });
-        task = response.data;
     }
     async function getTasks() {
         const taskListTodo = document.getElementById('task-list-todo');
